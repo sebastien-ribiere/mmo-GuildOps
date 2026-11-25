@@ -19,7 +19,7 @@ Le volume nommé est conservé par down (sans -v). Ne pas utiliser down -v si le
 
 ## Tests
 ```sh
-npm install --ignore-scripts
+npm ci --ignore-scripts
 npm test
 # Tests PostgreSQL : TEST_DATABASE_URL vers une base de test dédiée.
 # Smoke test destructif pour les conteneurs (pas le volume) : sur une pile de labo isolée uniquement.
@@ -32,4 +32,4 @@ src/domain.mjs : transitions métier partagées ; src/postgres.mjs : stockage tr
 Les jetons sont stockés sous forme de hash ; les actions sont sérialisées par verrou joueur et les résultats idempotents enregistrés dans la même transaction. Le schéma initial ne gère qu'une quête ; il évoluera avec la prochaine tranche de gameplay.
 
 ## Limites
-Une quête seulement, position non contrôlée serveur, pas de multijoueur temps réel, pas d'authentification production, pas de sauvegarde/restauration qualifiée, pas de test navigateur ni de charge. Dépendance pg directement épinglée ; verrou transitif à ajouter. Images Docker par tags, digests à figer avant diffusion. La disponibilité ne peut pas être déduite de la présence des healthchecks. Litmus et chaos avancé facultatifs (P3).
+Une quête seulement, position non contrôlée serveur, pas de multijoueur temps réel, pas d'authentification production, pas de sauvegarde/restauration qualifiée, pas de test navigateur ni de charge. Dépendances verrouillées par package-lock.json (npm ci). Images Docker par tags, digests à figer avant diffusion. La disponibilité ne peut pas être déduite de la présence des healthchecks. Litmus et chaos avancé facultatifs (P3).

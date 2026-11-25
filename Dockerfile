@@ -1,7 +1,7 @@
 FROM node:22-bookworm-slim
 WORKDIR /app
 COPY --chown=node:node package*.json ./
-RUN npm install --omit=dev --ignore-scripts
+RUN npm ci --omit=dev --ignore-scripts
 COPY --chown=node:node src ./src
 COPY --chown=node:node public ./public
 COPY --chown=node:node migrations ./migrations
