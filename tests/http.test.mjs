@@ -1,0 +1,21 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { once } from 'node:events';
+import { makeServer } from '../src/server.mjs';
+test('HTTP: parcours joueur et reconnexion dans le même processus',async t=>{
+  const server=makeServer(); server.listen(0,'127.0.0.1');await once(server,'listening');
+  t.after(()=>new Promise(resolve=>server.close(resolve)));
+  const base='http://127.0.0.1:'+server.address().port;
+  assert.equal((await fetch(base+'/')).status,200);
+  assert.equal((await fetch(base+'/healthz')).status,200);
+  assert.equal((await fetch(base+'/api/players/me')).status,401);
+  const created=await fetch(base+'/api/players',{method:'POST',body:JSON.stringify({name:'Miette'})});
+  assert.equal(created.status,201);
+  const {token}=await created.json();
+  const headers={Authorization:'Bearer '+token,'Idempotency-Key':'accept'};
+  assert.equal((await fetch(base+'/api/quests/welcome/accept',{method:'POST',headers})).status,200);
+  const opts={method:'POST',headers:{...headers,'Idempotency-Key':'talk'},body:JSON.stringify({action:'talk',target:'guildmaster'})};
+  const response=await fetch(base+'/api/interactions',opts);assert.equal(response.status,200);
+  const first=await response.json();assert.deepEqual(await (await fetch(base+'/api/interactions',opts)).json(),first);
+  assert.equal((await (await fetch(base+'/api/players/me',{headers})).json()).inventory['badge-guilde'],1);
+});
