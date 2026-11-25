@@ -27,6 +27,15 @@ node scripts/smoke-compose.mjs
 ```
 Sans TEST_DATABASE_URL les tests PostgreSQL sont explicitement ignorés. Le prototype mémoire reste disponible via GUILDOPS_VOLATILE=1 npm start ; il ne sauvegarde rien.
 
+## Test navigateur (P0-02)
+Chrome (ou Chromium) installé ; `playwright-core` pilote le navigateur sans télécharger de binaire. Sur une pile Compose isolée :
+```sh
+npm ci
+E2E_URL=http://127.0.0.1:8080 npm run test:e2e              # parcours seul
+E2E_URL=http://127.0.0.1:8080 node tests/e2e/browser.mjs --compose   # + panne et recréation de l'API
+```
+Parcours : création, déplacement clavier, quête, récompense, anti-doublon, rechargement. L'option `--compose` arrête puis recrée le conteneur `app` : ne l'utiliser que sur une pile de labo. Captures dans `artifacts/e2e/` (ignoré par git) ; exemples archivés dans `docs/preuves-e2e/`.
+
 ## Jeu de données de démo et reset (P0-04)
 Trois joueurs fictifs déterministes (identifiants et dates fixes) : `demo-token-nouveau` (quête disponible), `demo-token-quete` (quête active), `demo-token-termine` (quête terminée, badge). Ces jetons sont publics et valables en laboratoire uniquement.
 ```sh
@@ -40,4 +49,4 @@ src/domain.mjs : transitions métier partagées ; src/postgres.mjs : stockage tr
 Les jetons sont stockés sous forme de hash ; les actions sont sérialisées par verrou joueur et les résultats idempotents enregistrés dans la même transaction. Le schéma initial ne gère qu'une quête ; il évoluera avec la prochaine tranche de gameplay.
 
 ## Limites
-Une quête seulement, position non contrôlée serveur, pas de multijoueur temps réel, pas d'authentification production, pas de sauvegarde/restauration qualifiée, pas de test navigateur ni de charge. Dépendances verrouillées par package-lock.json (npm ci). Images Docker par tags, digests à figer avant diffusion. La disponibilité ne peut pas être déduite de la présence des healthchecks. Litmus et chaos avancé facultatifs (P3).
+Une quête seulement, position non contrôlée serveur, pas de multijoueur temps réel, pas d'authentification production, pas de sauvegarde/restauration qualifiée, pas de test de charge ; test navigateur non branché sur la CI. Dépendances verrouillées par package-lock.json (npm ci). Images Docker par tags, digests à figer avant diffusion. La disponibilité ne peut pas être déduite de la présence des healthchecks. Litmus et chaos avancé facultatifs (P3).

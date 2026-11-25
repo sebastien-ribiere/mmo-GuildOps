@@ -13,7 +13,6 @@ Ces résultats ont été obtenus par exécution ; ce qui n'est pas listé n'est 
 | Nettoyage | `docker compose down -v` | volume du projet de test supprimé (projet isolé `guildops-p0`, port 18080) |
 
 ## Non validé / limites
-- Aucun test navigateur : le parcours est vérifié au niveau API, pas dans le Canvas.
 - Une seule quête et un seul PNJ (M0 en prévoit trois) : décision à prendre côté formateur.
 - Pas de sauvegarde/restauration qualifiée, pas de test de charge, pas de machine témoin tierce.
 - CI GitHub non observée sur cette branche.
@@ -29,3 +28,21 @@ Ces résultats ont été obtenus par exécution ; ce qui n'est pas listé n'est 
 | Compose | `node scripts/smoke-compose.mjs` | PASS : reset via `compose exec`, jetons de démo valides, ancienne session en 401 |
 
 Constat : `node --test` lance les fichiers en parallèle ; le test de reset échouait (5 joueurs au lieu de 3) car `postgres.test.mjs` écrit dans la même base. `npm test` utilise désormais `--test-concurrency=1`.
+
+## P0-02 — preuve navigateur (branche `feat/p0-02-browser-e2e`)
+Chrome headless piloté par playwright-core 1.65.1, contre la pile Compose (projet isolé `guildops-p0`, port 18080).
+
+| Étape vérifiée dans le navigateur | Résultat |
+|---|---|
+| Création du joueur, quête « disponible », inventaire « Vide », bouton d'acceptation désactivé loin du PNJ | ok |
+| Déplacement clavier jusqu'au maître de guilde | ok |
+| Acceptation puis récompense : `badge-guilde × 1` | ok |
+| Second « Parler » : message « déjà membre », toujours `× 1` | ok |
+| Rechargement : « Session retrouvée », quête terminée, inventaire conservé | ok |
+| API arrêtée : « Action non confirmée : Failed to fetch », inventaire inchangé (pas de succès fictif) | ok |
+| API recréée (`--force-recreate`) puis rechargement : inventaire conservé | ok |
+| Aucune erreur JS non interceptée | ok |
+
+Résultat : `PASS: parcours navigateur + panne/reprise API`, 2 exécutions complètes consécutives sur pile neuve (la 1re a échoué à cause d'un défaut du test — la position n'est pas persistée donc le personnage revient au départ après rechargement — corrigé dans le test, pas dans le jeu). Captures : `docs/preuves-e2e/`.
+
+Constats non corrigés : le nom du joueur et celui du PNJ se chevauchent à l'écran quand ils sont adjacents ; le message d'erreur réseau est le texte brut du navigateur (« Failed to fetch »). Le test n'est pas branché sur la CI GitHub (non observable ici). Seul Chrome a été essayé ; Firefox et mobile ne sont pas vérifiés.
