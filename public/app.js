@@ -71,5 +71,5 @@ const keys={ArrowUp:[0,-1],z:[0,-1],w:[0,-1],ArrowDown:[0,1],s:[0,1],ArrowLeft:[
 window.addEventListener('keydown',e=>{if(!player||e.target instanceof HTMLInputElement)return;const delta=keys[e.key];if(delta){e.preventDefault();move(...delta);}});
 if(token) {
   try{await enter(await api('/api/players/me'));status('Session retrouvée.');}
-  catch(e){if(e.status===401){localStorage.removeItem('guildops-token');token=null;status('Session expirée : état volatile.');}else status('Serveur indisponible. Recharge la page pour retrouver la session.');}
+  catch(e){if(e.status===401){localStorage.removeItem('guildops-token');token=null;status('Session inconnue ou expirée : reconnecte-toi avec un nouveau personnage.');}else status('Serveur indisponible. Recharge la page pour retrouver la session.');}
 }

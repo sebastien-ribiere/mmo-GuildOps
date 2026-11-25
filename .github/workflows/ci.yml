@@ -2,16 +2,43 @@ name: Prototype checks
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, feat/m1b-postgres]
 permissions:
   contents: read
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-bookworm
+        env:
+          POSTGRES_USER: guildops
+          POSTGRES_PASSWORD: ci-only
+          POSTGRES_DB: guildops_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U guildops -d guildops_test"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgres://guildops:ci-only@localhost:5432/guildops_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - run: npm install --ignore-scripts
       - run: npm test
       - run: node --check public/app.js
+  compose:
+    runs-on: ubuntu-latest
+    env:
+      POSTGRES_PASSWORD: ci-only
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose up -d --build --wait
+      - run: node scripts/smoke-compose.mjs
+      - if: failure()
+        run: docker compose logs --no-color
+      - if: always()
+        run: docker compose down -v
