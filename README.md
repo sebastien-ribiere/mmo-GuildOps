@@ -1,21 +1,35 @@
-# MMO GuildOps — M1a (prototype)
+# MMO GuildOps — M1b (persistance)
 
-Jeu navigateur pour le laboratoire d'hébergement INFAL105. Ce spike ne constitue pas une livraison de classe.
+Jeu navigateur pour le laboratoire d'hébergement INFAL105. Contrat : https://github.com/sebastien-ribiere/mmo-GuildOps-formateur (main).
 
-## Lancer
-Node.js 22. Aucune dépendance npm.
+## Lancer avec Docker Compose
+Préparer un mot de passe de labo (hexadécimal, sans caractères réservés URL). Ne pas committer .env.
 ```sh
-npm test
-npm start
+cp .env.example .env
+# Remplacer POSTGRES_PASSWORD dans .env
+docker compose up -d --build --wait
 ```
-Ouvrir http://localhost:8080. Créer un aventurier, rejoindre le maître de guilde (flèches / ZQSD), accepter la quête, lui parler à nouveau et consulter l'inventaire. Recharger la page pour retrouver la session tant que le serveur tourne.
+Ouvrir http://localhost:8080. Créer un aventurier, rejoindre le maître de guilde (flèches / ZQSD), accepter la quête et parler. Recharger la page pour retrouver la session.
+```sh
+docker compose restart app
+docker compose down
+docker compose up -d
+```
+Le volume nommé est conservé par down (sans -v). Ne pas utiliser down -v si les données doivent être conservées. DB non publiée, app liée à localhost. Pour le labo uniquement, pas de production.
+
+## Tests
+```sh
+npm install --ignore-scripts
+npm test
+# Tests PostgreSQL : TEST_DATABASE_URL vers une base de test dédiée.
+# Smoke test destructif pour les conteneurs (pas le volume) : sur une pile de labo isolée uniquement.
+node scripts/smoke-compose.mjs
+```
+Sans TEST_DATABASE_URL les tests PostgreSQL sont explicitement ignorés. Le prototype mémoire reste disponible via GUILDOPS_VOLATILE=1 npm start ; il ne sauvegarde rien.
 
 ## Organisation
-- src/domain.mjs : règles métier et état volatile.
-- src/server.mjs : adaptateur HTTP, validation et fichiers statiques.
-- public/ : rendu Canvas isométrique provisoire.
-- tests/ : tests Node sans dépendance.
+src/domain.mjs : transitions métier partagées ; src/postgres.mjs : stockage transactionnel ; src/server.mjs : adaptateur HTTP ; migrations/ : schéma ; public/ : rendu Canvas provisoire.
+Les jetons sont stockés sous forme de hash ; les actions sont sérialisées par verrou joueur et les résultats idempotents enregistrés dans la même transaction. Le schéma initial ne gère qu'une quête ; il évoluera avec la prochaine tranche de gameplay.
 
-Contrat de conception : https://github.com/sebastien-ribiere/mmo-GuildOps-formateur/pull/1 (proposé, en revue).
-
-Limites : état en mémoire, un seul processus, pas de PostgreSQL ni de vraie persistance après redémarrage ; aucun multijoueur temps réel. Position locale non vérifiée serveur. Jeton anonyme de laboratoire, pas d'authentification de production. Aucun test de charge, de déploiement ou de navigateur déclaré exécuté. Assets temporaires originaux dessinés par code. Ne pas exposer sur Internet en l'état.
+## Limites
+Une quête seulement, position non contrôlée serveur, pas de multijoueur temps réel, pas d'authentification production, pas de sauvegarde/restauration qualifiée, pas de test navigateur ni de charge. Dépendance pg directement épinglée ; verrou transitif à ajouter. Images Docker par tags, digests à figer avant diffusion. La disponibilité ne peut pas être déduite de la présence des healthchecks. Litmus et chaos avancé facultatifs (P3).
