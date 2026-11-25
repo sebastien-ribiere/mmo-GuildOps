@@ -27,8 +27,16 @@ node scripts/smoke-compose.mjs
 ```
 Sans TEST_DATABASE_URL les tests PostgreSQL sont explicitement ignorés. Le prototype mémoire reste disponible via GUILDOPS_VOLATILE=1 npm start ; il ne sauvegarde rien.
 
+## Jeu de données de démo et reset (P0-04)
+Trois joueurs fictifs déterministes (identifiants et dates fixes) : `demo-token-nouveau` (quête disponible), `demo-token-quete` (quête active), `demo-token-termine` (quête terminée, badge). Ces jetons sont publics et valables en laboratoire uniquement.
+```sh
+docker compose exec app node src/seed.mjs --yes     # pile Compose
+DATABASE_URL=... npm run reset                      # base locale
+```
+Le reset **efface tous les joueurs** de la base ciblée puis recrée le jeu de démo, en une transaction ; sans `--yes` il refuse. Le schéma doit exister (démarrer l'application une fois). Ne jamais le lancer sur une base contenant autre chose que des données de labo. Utilisation : `Authorization: Bearer demo-token-termine`.
+
 ## Organisation
-src/domain.mjs : transitions métier partagées ; src/postgres.mjs : stockage transactionnel ; src/server.mjs : adaptateur HTTP ; migrations/ : schéma ; public/ : rendu Canvas provisoire.
+src/domain.mjs : transitions métier partagées ; src/postgres.mjs : stockage transactionnel ; src/seed.mjs : jeu de démo et reset ; src/server.mjs : adaptateur HTTP ; migrations/ : schéma ; public/ : rendu Canvas provisoire.
 Les jetons sont stockés sous forme de hash ; les actions sont sérialisées par verrou joueur et les résultats idempotents enregistrés dans la même transaction. Le schéma initial ne gère qu'une quête ; il évoluera avec la prochaine tranche de gameplay.
 
 ## Limites

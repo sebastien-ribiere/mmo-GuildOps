@@ -8,7 +8,8 @@
   },
   "scripts": {
     "start": "node src/server.mjs",
-    "test": "node --test"
+    "test": "node --test --test-concurrency=1",
+    "reset": "node src/seed.mjs --yes"
   },
   "dependencies": {
     "pg": "8.16.3"
