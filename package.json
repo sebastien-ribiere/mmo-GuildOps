@@ -10,7 +10,9 @@
     "start": "node src/server.mjs",
     "test": "node --test --test-concurrency=1",
     "reset": "node src/seed.mjs --yes",
-    "test:e2e": "node tests/e2e/browser.mjs"
+    "test:e2e": "node tests/e2e/browser.mjs",
+    "load": "node scripts/load.mjs",
+    "probe": "node scripts/probe.mjs"
   },
   "dependencies": {
     "pg": "8.16.3"

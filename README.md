@@ -44,9 +44,22 @@ DATABASE_URL=... npm run reset                      # base locale
 ```
 Le reset **efface tous les joueurs** de la base ciblée puis recrée le jeu de démo, en une transaction ; sans `--yes` il refuse. Le schéma doit exister (démarrer l'application une fois). Ne jamais le lancer sur une base contenant autre chose que des données de labo. Utilisation : `Authorization: Bearer demo-token-termine`.
 
+## Mesure : charge et sonde (P0-09)
+Deux scripts sans dépendance, pour TP05 (charge) et TP07 (sonde). Ils n'interrogent que des cibles **locales ou privées** (`--allow-remote` pour lever la garde, sous votre responsabilité).
+```sh
+# Charge : rejoue le parcours (5 requêtes) ; CSV par requête + JSON de synthèse
+node scripts/load.mjs --base http://127.0.0.1:8080 --journeys 1000 --concurrency 20 --out artifacts/load/essai1
+# Sonde : /healthz, /readyz et une route de jeu toutes les secondes ; ajoute au CSV existant
+node scripts/probe.mjs --base http://127.0.0.1:8080 --interval-ms 1000 --duration-s 60 --out artifacts/probe/p.csv
+```
+- `load.mjs` **crée un joueur par parcours** dans la base visée : appeler ensuite `npm run reset` si besoin. La concurrence est plafonnée à 150 (`--allow-high-concurrency` pour dépasser) : sur la machine de référence, à 200 connexions par le port publié par Docker, la redirection de port s'est arrêtée (cause non établie) ; viser directement le conteneur évite ce chemin.
+- Percentiles : méthode du rang le plus proche (le plus petit x tel qu'au moins p % des valeurs soient ≤ x). Modèle de charge : boucle fermée.
+- La sonde enregistre un échec comme une mesure (`status 0` et la cause), distingue `healthz` / `readyz` / jeu, et recrée son jeton si besoin. Elle donne des **comptes bruts** : définir le SLI et le calcul est le travail du TP07.
+- Une exécution ne prouve rien : répéter. Sorties dans `artifacts/` (ignoré par git).
+
 ## Organisation
 src/domain.mjs : transitions métier partagées ; src/postgres.mjs : stockage transactionnel ; src/seed.mjs : jeu de démo et reset ; src/server.mjs : adaptateur HTTP ; migrations/ : schéma ; public/ : rendu Canvas provisoire.
 Les jetons sont stockés sous forme de hash ; les actions sont sérialisées par verrou joueur et les résultats idempotents enregistrés dans la même transaction. Le schéma initial ne gère qu'une quête ; il évoluera avec la prochaine tranche de gameplay.
 
 ## Limites
-Une quête seulement, position non contrôlée serveur, pas de multijoueur temps réel, pas d'authentification production, pas de sauvegarde/restauration qualifiée, pas de test de charge ; test navigateur non branché sur la CI. Dépendances verrouillées par package-lock.json (npm ci). Images Docker par tags, digests à figer avant diffusion. La disponibilité ne peut pas être déduite de la présence des healthchecks. Litmus et chaos avancé facultatifs (P3).
+Une quête seulement, position non contrôlée serveur, pas de multijoueur temps réel, pas d'authentification production, pas de sauvegarde/restauration qualifiée, test navigateur non branché sur la CI ; pas de métriques côté serveur (`/metrics` volontairement absent). Dépendances verrouillées par package-lock.json (npm ci). Images Docker par tags, digests à figer avant diffusion. La disponibilité ne peut pas être déduite de la présence des healthchecks. Litmus et chaos avancé facultatifs (P3).
